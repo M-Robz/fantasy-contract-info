@@ -1,11 +1,14 @@
 // Encoding: UTF-8
 
+console.log('Fantasy Contract Info: script loaded');
+
 /*-----------
    GLOBALS 
 -----------*/
 
 var thisPage = window.location.href,
-    league = '';
+    league = '',
+    waitForPageXHR; // timer to allow Yahoo XHR to complete
 
 if (thisPage.indexOf('baseball') > -1) {
   league = 'alooo';
@@ -28,7 +31,7 @@ var config = {
     // Retrieve config from local storage
     chrome.storage.local.get(function(result) {
       if (chrome.runtime.lastError) {
-        getLocalPromise.reject('Failed to access locally stored config. Terminating script. ' + chrome.runtime.lastError);
+        getLocalPromise.reject('Fantasy Contract Info: Failed to access local storage. ' + chrome.runtime.lastError);
         
       } else {
         // On success, store retrieved config
@@ -48,6 +51,7 @@ var config = {
       
       // Call getServerConfig() to request config from server
       thisObj.getServerConfig().done(function(result) {
+        console.log('Fantasy Contract Info: obtained config from server');
         
         // On success, update local storage and active settings
         chrome.storage.local.set(result);
@@ -59,6 +63,8 @@ var config = {
       });
       
     } else {
+      console.log('Fantasy Contract Info: using local config');
+      
       // Exit function if local config exists and is not expired
       checkExpiredPromise.resolve();
     }
@@ -70,7 +76,7 @@ var config = {
     var getServerConfigPromise = $.Deferred();
     
     // Request config from server; response will be JSON
-    $.ajax('http://www.m-robz.net/fantasy/get-contracts/server.php', { 
+    $.ajax('http://www.m-robz.net/fantasy/contract-info-extension/server.php', { 
       type: 'POST',
       dataType: 'json',
       crossDomain: true,
@@ -80,7 +86,7 @@ var config = {
         getServerConfigPromise.resolve(newConfig);
       },
       error: function(request, errorType, errorMessage) {
-        getServerConfigPromise.reject('Failed to get config from server. Terminating script. ' + errorType + ' ' + errorMessage);
+        getServerConfigPromise.reject('Fantasy Contract Info: Failed to get config from server. ' + errorType + ' ' + errorMessage);
       },
       timeout: 9999
     });
@@ -119,21 +125,14 @@ var players = {
   
   getContracts: function() {
     
-    // Concatenate array of names 
-    var nameStr = '';
-    for (i=0, x=this.names.length; i<x; i++) {
-      if (i == x-1) {
-        nameStr += "'" + this.names[i] + "'";
-      } else {
-        nameStr += "'" + this.names[i] + "', ";
-      }
-    }
+    // Concatenate names (use " in separator so apostrophes in names don't break string)
+    var nameStr = '"' + this.names.join('", "') + '"';
     
     var thisObj = this,
         getContractsPromise = $.Deferred();
         
     // Request contracts from server; response will be JSON
-    $.ajax('http://www.m-robz.net/fantasy/get-contracts/server.php', {
+    $.ajax('http://www.m-robz.net/fantasy/contract-info-extension/server.php', {
       type: 'POST',
       dataType: 'json',
       crossDomain: true,
@@ -143,6 +142,7 @@ var players = {
         "names": nameStr // the string of names
       },
       success: function(response) { 
+        console.log('Fantasy Contract Info: obtained contracts from server');
         var newConfig = response.config;
         
         // If server sent a new config, update local storage and active settings
@@ -156,7 +156,7 @@ var players = {
         getContractsPromise.resolve();
       },
       error: function(request, errorType, errorMessage) {
-        getContractsPromise.reject('Failed to get contracts from server. Terminating script. ' + errorType + ' ' + errorMessage);
+        getContractsPromise.reject('Fantasy Contract Info: Failed to get contracts from server. ' + errorType + ' ' + errorMessage);
       },
       timeout: 9999
     });
@@ -203,6 +203,7 @@ var players = {
         });
         break;
     }
+    console.log('Fantasy Contract Info: finished injecting contracts');
   }
 };
 
@@ -227,6 +228,28 @@ config.getLocal().done(function() {
         
         // Inject contract data into DOM
         players.injectContracts();
+        
+        // When user clicks on tabs on team page (e.g., stats, ranks), wait 5 sec to allow time for Yahoo's script to make XHR, then re-inject contracts
+        $('#yspmaincontent').on('click', '.Navtarget', function() {
+          clearTimeout(waitForPageXHR);
+          waitForPageXHR = setTimeout(function() {
+            players.collectNames();
+            players.injectContracts();
+          }, 5000);
+        });
+        
+        // When user searches or filters on player list, wait 5 sec to allow time for Yahoo's script to make XHR, then get contracts for the new set of names
+        $('#yspmaincontent').on('click', '.Btn-primary', function() {
+          clearTimeout(waitForPageXHR);
+          waitForPageXHR = setTimeout(function() {
+            players.collectNames();
+            players.getContracts().done(function() {
+              players.injectContracts();
+            }).fail(function(error) {
+              console.log(error);
+            });
+          }, 5000);
+        });
         
       }).fail(function(error) {
         console.log(error);

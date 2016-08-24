@@ -1,8 +1,13 @@
 {
   "manifest_version": 2,
   "name": "Fantasy Contract Info",
-  "version": "1.0",
-  "description": "Looks up your players' contracts and displays them when you hover over their names on the Yahoo fantasy site. For the private leagues 'A League of Our Own' and 'RHL'.",
+  "version": "1.1",
+  "homepage_url": "https://github.com/M-Robz/fantasy-contract-info",
+  "description": "Displays your players' contracts when you hover over their names on the Yahoo fantasy site. For the private leagues ALOOO and RHL.",
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -19,5 +24,11 @@
   "permissions": [
     "http://www.m-robz.net/*",
     "storage"
-  ]
+  ],
+  "browser_action": {
+    "default_icon": {
+      "19": "icon19.png",
+      "38": "icon38.png"
+    }
+  }
 }
