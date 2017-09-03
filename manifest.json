@@ -1,12 +1,19 @@
 {
   "manifest_version": 2,
   "name": "Fantasy Contract Info",
-  "version": "1.1",
+  "version": "2.0",
   "homepage_url": "https://github.com/M-Robz/fantasy-contract-info",
   "description": "Displays your players' contracts when you hover over their names on the Yahoo fantasy site. For the private leagues ALOOO and RHL.",
   "icons": {
     "48": "icon48.png",
     "128": "icon128.png"
+  },
+  "background": {
+    "persistent": false,
+    "scripts": [
+      "jquery-3.1.0.min.js",
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
@@ -16,19 +23,24 @@
       ],
       "js": [
         "jquery-3.1.0.min.js",
-        "content-script.js"
+        "utilities.js",
+        "config.js",
+        "players.js",
+        "content.js"
       ],
       "run_at": "document_idle"
     }
   ],
   "permissions": [
     "http://www.m-robz.net/*",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "browser_action": {
     "default_icon": {
       "19": "icon19.png",
       "38": "icon38.png"
-    }
+    },
+    "default_popup": "popup.html"
   }
 }
