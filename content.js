@@ -42,10 +42,10 @@ config.getLocal()
   })
 
   .then(function() {
+    var promise = $.Deferred();
 
     // Confirm that user is on a Yahoo page for ALOOO or RHL leagues
     if (thisPage.indexOf(config.settings[league]['url']) > -1) {
-      var promise = $.Deferred();
 
       // Collect player names from DOM and continue if any found
       players.collectNames();
@@ -56,10 +56,9 @@ config.getLocal()
           .then(function() {
             promise.resolve();
           });
-
       }
-      return promise;
     }
+    return promise;
   })
 
   .then(function() {
